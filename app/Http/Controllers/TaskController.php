@@ -32,7 +32,7 @@ class TaskController extends Controller
             ];
 
             return response()->json($response, 200);
-            
+
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 400);
         }
@@ -84,13 +84,13 @@ class TaskController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function delete($id)
     {
         try {
             $task = Task::find($id)->first();
             $task->delete();
 
-            return response()->json(['message' => 'Task updated successfully'], 204);
+            return response()->json(['message' => 'Task has been deleted'], 204);
         } catch (\Throwable $th) {
             return response()->json(['message' => $th->getMessage()], 400);
         }
