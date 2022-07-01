@@ -2,6 +2,7 @@
 
 namespace App\Http\Services;
 
+use App\Http\Resources\SubTaskResource;
 use App\Models\SubTask;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -9,7 +10,7 @@ class SubTaskService
 {
     public static function findAllByTaskId($task_id)
     {
-        $subTasks = SubTask::all()->where('task_id', '=', $task_id);
+        $subTasks = new SubTaskResource(SubTask::all()->where('task_id', '=', $task_id));
 
         if (!$subTasks) {
             throw new ModelNotFoundException('SubTasks not found');

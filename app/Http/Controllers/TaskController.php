@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ForbiddenException;
+use App\Http\Resources\TaskResource;
 use App\Http\Services\TaskService;
 use App\Models\Task;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -13,7 +14,7 @@ class TaskController extends Controller
     public function index(Request $request)
     {
         try {
-            $tasks = $request->user()->tasks;
+            $tasks = TaskResource::collection($request->user()->tasks);
             return response()->json($tasks, 200);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 400);
@@ -23,22 +24,9 @@ class TaskController extends Controller
     public function show(Request $request, $id)
     {
         try {
-            $task =  TaskService::findById($id);
+            $task = TaskService::ownerCorrect($request, $id);
 
-            $user = $request->user();
-
-            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
-
-            if (!$ownerCorrect) {
-                throw new ForbiddenException('You don\'t have permission');
-            }
-
-            $response = [
-                'message' => 'Task founded successfully',
-                'task' => $task
-            ];
-
-            return response()->json($response, 200);
+            return response()->json($task, 200);
 
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
@@ -58,12 +46,7 @@ class TaskController extends Controller
 
             $task = Task::create($fields);
 
-            $response = [
-                'message' => 'Task created successfully',
-                'task' => $task
-            ];
-
-            return response()->json($response, 201);
+            return response()->json(new TaskResource($task), 201);
 
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 400);
@@ -73,15 +56,7 @@ class TaskController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $task = TaskService::findById($id);
-
-            $user = $request->user();
-
-            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
-
-            if (!$ownerCorrect) {
-                throw new ForbiddenException('You don\'t have permission');
-            }
+            $task = TaskService::ownerCorrect($request, $id);
 
             $fields = $request->validate([
                 'name' => ['string', 'max:100'],
@@ -89,12 +64,7 @@ class TaskController extends Controller
 
             $task->update($fields);
 
-            $response = [
-                'message' => 'Task updated successfully',
-                'task' => $task
-            ];
-
-            return response()->json($response);
+            return response()->json(new TaskResource($task));
    
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
@@ -106,15 +76,7 @@ class TaskController extends Controller
     public function delete(Request $request, $id)
     {
         try {
-            $task = TaskService::findById($id);
-
-            $user = $request->user();
-
-            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
-
-            if (!$ownerCorrect) {
-                throw new ForbiddenException('You don\'t have permission');
-            }
+            $task = TaskService::ownerCorrect($request, $id);
 
             $task->delete();
 

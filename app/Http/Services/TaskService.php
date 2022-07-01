@@ -4,6 +4,7 @@ namespace App\Http\Services;
 
 use App\Exceptions\ForbiddenException;
 use App\Exceptions\TaskNotFoundException;
+use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -12,7 +13,7 @@ class TaskService
 {
     public static function findById($id)
     {
-        $task = Task::find($id);
+        $task = new TaskResource(Task::find($id));
 
         if (!$task) {
             throw new ModelNotFoundException('Task not found by id ' . $id);
@@ -21,14 +22,14 @@ class TaskService
         return $task;
     }
 
-    public static function ownerCorrect($owner_id, $task_id)
+    public static function ownerCorrect($request, $task_id)
     {
-        $task = User::find($owner_id)->tasks->where('id', '=', $task_id)->first();
+        $task = $request->user()->tasks->where('id', '=', $task_id)->first();
 
         if (!$task) {
-            return false;
+            throw new ForbiddenException('You don\'t have permission');
         }
 
-        return true;
+        return new TaskResource($task);
     }
 }
