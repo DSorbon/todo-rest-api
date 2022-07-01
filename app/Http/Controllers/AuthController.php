@@ -34,8 +34,8 @@ class AuthController extends Controller
             ];
     
             return response()->json($response, 201);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 
@@ -47,7 +47,7 @@ class AuthController extends Controller
                 'password' => ['required', 'string', 'min:6', 'max:50'],
             ]);
     
-            $hashedPassword = Hash::make($fields['password']);
+            // $hashedPassword = Hash::make($fields['password']);
             
             $user = User::where('username',$fields['username'])->first();
     
@@ -67,8 +67,8 @@ class AuthController extends Controller
             ];
     
             return response()->json($response, 200);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 
@@ -80,8 +80,8 @@ class AuthController extends Controller
             $request->user()->tokens()->where('id', $tokenId)->delete();
             
             return response()->json(['message' => 'Logged out'], 200);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 }

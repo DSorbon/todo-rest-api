@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ForbiddenException;
+use App\Http\Services\TaskService;
 use App\Models\Task;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
@@ -12,18 +15,22 @@ class TaskController extends Controller
         try {
             $tasks = $request->user()->tasks;
             return response()->json($tasks, 200);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         try {
-            $task =  Task::find($id)->first();
+            $task =  TaskService::findById($id);
 
-            if (!$task) {
-                return response()->json(['message' => 'Task not found'], 404);
+            $user = $request->user();
+
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
             }
 
             $response = [
@@ -33,8 +40,10 @@ class TaskController extends Controller
 
             return response()->json($response, 200);
 
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 
@@ -56,19 +65,27 @@ class TaskController extends Controller
 
             return response()->json($response, 201);
 
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 
     public function update(Request $request, $id)
     {
         try {
-            $fields = $request->validate([
-                'name' => ['required', 'string', 'max:100'],
-            ]);
+            $task = TaskService::findById($id);
 
-            $task = Task::find($id);
+            $user = $request->user();
+
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
+            }
+
+            $fields = $request->validate([
+                'name' => ['string', 'max:100'],
+            ]);
 
             $task->update($fields);
 
@@ -79,20 +96,33 @@ class TaskController extends Controller
 
             return response()->json($response);
    
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 
-    public function delete($id)
+    public function delete(Request $request, $id)
     {
         try {
-            $task = Task::find($id)->first();
+            $task = TaskService::findById($id);
+
+            $user = $request->user();
+
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
+            }
+
             $task->delete();
 
             return response()->json(['message' => 'Task has been deleted'], 204);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 }

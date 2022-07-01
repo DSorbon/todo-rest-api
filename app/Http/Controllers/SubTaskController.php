@@ -2,7 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ForbiddenException;
+use App\Exceptions\TaskNotFoundException;
+use App\Http\Services\SubTaskService;
+use App\Http\Services\TaskService;
 use App\Models\SubTask;
+use Error;
+use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 
 class SubTaskController extends Controller
@@ -10,46 +17,66 @@ class SubTaskController extends Controller
     public function index(Request $request, $task_id)
     {
         try {
-            $task = $request->user()->tasks->where('id', '=', $task_id)->first();
+            $task = TaskService::findById($task_id);
 
-            $subTasks = SubTask::all()->where('task_id', '=', $task->id);
+            $user = $request->user();
+
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
+            }
+
+            $subTasks = SubTaskService::findAllByTaskId($task->id);
+
             return response()->json($subTasks, 200);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 
     public function show(Request $request, $task_id, $id)
     {
         try {
-            $task = $request->user()->tasks->where('id', '=', $task_id)->first();
+            $task = TaskService::findById($task_id);
 
-            $subTasks = SubTask::find($id)->where('task_id', '=', $task->id)->first();
+            $user = $request->user();
 
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
 
-            if (!$subTasks) {
-                return response()->json(['message' => 'SubTask not found'], 404);
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
             }
+
+            $subTask = SubTaskService::findById($id, $task->id);
 
             $response = [
                 'message' => 'SubTask founded successfully',
-                'task' => $subTasks
+                'task' => $subTask
             ];
 
             return response()->json($response, 200);
             
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 
     public function store(Request $request, $task_id)
     {
         try {
-            $task = $request->user()->tasks->where('id', '=', $task_id)->first();
+            $task = TaskService::findById($task_id);
 
-            if (!$task) {
-                return response()->json(['message' => 'Task not found'], 404);
+            $user = $request->user();
+
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
             }
 
             $fields = $request->validate([
@@ -68,65 +95,71 @@ class SubTaskController extends Controller
 
             return response()->json($response, 201);
 
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 
     public function update(Request $request, $task_id, $id)
     {
         try {
-            $task = $request->user()->tasks->where('id', '=', $task_id)->first();
+            $task = TaskService::findById($task_id);
 
-            $subTasks = SubTask::find($id)->where('task_id', '=', $task->id)->first();
+            $user = $request->user();
 
-            if (!$task) {
-                return response()->json(['message' => 'Task not found'], 404);
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
             }
 
-            if (!$subTasks) {
-                return response()->json(['message' => 'SubTask not found'], 404);
-            }
+            $subTask = SubTaskService::findById($id, $task->id);
 
             $fields = $request->validate([
-                'title' => ['required', 'string', 'max:70'],
-                'description' => ['required', 'string']
+                'title' => ['string', 'max:70'],
+                'description' => ['string']
             ]);
 
-            $subTasks->update($fields);
+            $subTask->update($fields);
 
             $response = [
                 'message' => 'Task updated successfully',
-                'subTask' => $subTasks
+                'subTask' => $subTask
             ];
 
             return response()->json($response);
    
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 
     public function delete(Request $request, $task_id, $id)
     {
         try {
-            $task = $request->user()->tasks->where('id', '=', $task_id)->first();
+            $task = TaskService::findById($task_id);
 
-            $subTasks = SubTask::find($id)->where('task_id', '=', $task->id)->first();
+            $user = $request->user();
 
-            if (!$task) {
-                return response()->json(['message' => 'Task not found'], 404);
+            $ownerCorrect = TaskService::ownerCorrect($user->id, $task->id);
+
+            if (!$ownerCorrect) {
+                throw new ForbiddenException('You don\'t have permission');
             }
 
-            if (!$subTasks) {
-                return response()->json(['message' => 'SubTask not found'], 404);
-            }
+            $subTask = SubTaskService::findById($id, $task->id);
 
-            $subTasks->delete();
+            $subTask->delete();
 
             return response()->json(['message' => 'SubTask has been deleted'], 204);
-        } catch (\Throwable $th) {
-            return response()->json(['message' => $th->getMessage()], 400);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['message' => $e->getMessage()], 404);
+        } catch (ForbiddenException $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
     }
 }

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'auth', 'controller'=> AuthController::class], function () {
     Route::post('register', 'register');
-    Route::post('login', 'login');
+    Route::post('login', 'login')->name('login');
 });
 
 Route::post('logout', [AuthController::class, 'logout'])->middleware(['auth:sanctum']);
@@ -41,6 +41,5 @@ Route::group(['middleware' => ['auth:sanctum']], function () {
             Route::delete('/{id}', 'delete');
         });
     });
-
-   
+    
 });
