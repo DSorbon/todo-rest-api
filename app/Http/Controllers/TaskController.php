@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ForbiddenException;
+use App\Http\Requests\TaskStoreRequest;
+use App\Http\Requests\TaskUpdateRequest;
 use App\Http\Resources\TaskResource;
 use App\Http\Services\TaskService;
 use App\Models\Task;
@@ -35,12 +37,10 @@ class TaskController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(TaskStoreRequest $request)
     {
         try {
-            $fields = $request->validate([
-                'name' => ['required', 'string', 'max:100'],
-            ]);
+            $fields = $request->validated();
 
             $fields['user_id'] = $request->user()->id;
 
@@ -53,14 +53,12 @@ class TaskController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(TaskUpdateRequest $request, $id)
     {
         try {
             $task = TaskService::ownerCorrect($request, $id);
 
-            $fields = $request->validate([
-                'name' => ['string', 'max:100'],
-            ]);
+            $fields = $request->validated();
 
             $task->update($fields);
 

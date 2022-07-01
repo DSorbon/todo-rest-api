@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ForbiddenException;
+use App\Http\Requests\SubTaskStoreRequest;
+use App\Http\Requests\SubTaskUpdateRequest;
 use App\Http\Resources\SubTaskResource;
 use App\Http\Services\SubTaskService;
 use App\Http\Services\TaskService;
@@ -43,15 +45,12 @@ class SubTaskController extends Controller
         }
     }
 
-    public function store(Request $request, $task_id)
+    public function store(SubTaskStoreRequest $request, $task_id)
     {
         try {
             $task = TaskService::ownerCorrect($request, $task_id);
 
-            $fields = $request->validate([
-                'title' => ['required', 'string', 'max:70'],
-                'description' => ['required', 'string']
-            ]);
+            $fields = $request->validated();
 
             $fields['task_id'] = $task->id;
 
@@ -66,17 +65,14 @@ class SubTaskController extends Controller
         }
     }
 
-    public function update(Request $request, $task_id, $id)
+    public function update(SubTaskUpdateRequest $request, $task_id, $id)
     {
         try {
             $task = TaskService::ownerCorrect($request, $task_id);
 
             $subTask = SubTaskService::findById($id, $task->id);
 
-            $fields = $request->validate([
-                'title' => ['string', 'max:70'],
-                'description' => ['string']
-            ]);
+            $fields = $request->validated();
 
             $subTask->update($fields);
 

@@ -13,6 +13,6 @@ class SubTask extends Model
 
     public function parentTask()
     {
-        return $this->belongsTo(Task::class, 'task_id', 'id');
+        return $this->belongsTo(Task::class);
     }
 }

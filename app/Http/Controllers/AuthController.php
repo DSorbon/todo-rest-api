@@ -2,20 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
         try {
-            $fields = $request->validate([
-                'username' => ['required', 'string', 'unique:users', 'min:3', 'max:50'],
-                'email' => ['required', 'string', 'email', 'unique:users'],
-                'password' => ['required', 'string', 'confirmed', 'min:6', 'max:50'],
-            ]);
+            $fields = $request->validated();
     
             $fields['password'] = Hash::make($fields['password']);
             
@@ -24,8 +22,6 @@ class AuthController extends Controller
             $accessToken = $user->createToken('access_token')->plainTextToken;
     
             $response = [
-                'status' => 'Success',
-                'message' => 'User created',
                 'user' => [
                     'username' => $user['username'],
                     'email' => $user['email'],
@@ -39,15 +35,10 @@ class AuthController extends Controller
         }
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
         try {
-            $fields = $request->validate([
-                'username' => ['required', 'string', 'min:3', 'max:50'],
-                'password' => ['required', 'string', 'min:6', 'max:50'],
-            ]);
-    
-            // $hashedPassword = Hash::make($fields['password']);
+            $fields = $request->validated();
             
             $user = User::where('username',$fields['username'])->first();
     
@@ -58,7 +49,6 @@ class AuthController extends Controller
             $accessToken = $user->createToken('access_token')->plainTextToken;
     
             $response = [
-                'message' => 'Success',
                 'user' => [
                     'username' => $user['username'],
                     'email' => $user['email'],
